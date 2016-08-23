@@ -50,6 +50,7 @@ type Driver struct {
 	SSHPassword    string
 	ConfigDriveISO string
 	ConfigDriveURL string
+	NoNoGUI        bool
 }
 
 const (
@@ -106,6 +107,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "SSH password",
 			Value:  defaultSSHPass,
 		},
+		mcnflag.BoolFlag{
+			EnvVar: "WORKTSATION_NO_NOGUI",
+			Name:   "vmwareworkstation-no-nogui",
+			Usage:  "Enables VMWare GUI",
+		},
 	}
 }
 
@@ -115,6 +121,7 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 		Memory:      defaultMemory,
 		DiskSize:    defaultDiskSize,
 		SSHPassword: defaultSSHPass,
+		NoNoGUI:     false,
 		BaseDriver: &drivers.BaseDriver{
 			SSHUser:     defaultSSHUser,
 			MachineName: hostName,
@@ -152,6 +159,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.SSHUser = flags.String("vmwareworkstation-ssh-user")
 	d.SSHPassword = flags.String("vmwareworkstation-ssh-password")
 	d.SSHPort = 22
+	d.NoNoGUI = flags.Bool("vmwareworkstation-no-nogui")
 
 	// We support a maximum of 16 cpu to be consistent with Virtual Hardware 10
 	// specs.
@@ -265,8 +273,11 @@ func (d *Driver) Create() error {
 	}
 
 	log.Infof("Starting %s...", d.MachineName)
-	vmrun("start", d.vmxPath(), "nogui")
-
+	if d.NoNoGUI {
+		vmrun("start", d.vmxPath())
+	} else {
+		vmrun("start", d.vmxPath(), "nogui")
+	}
 	var ip string
 
 	log.Infof("Waiting for VM to come online...")
@@ -277,7 +288,6 @@ func (d *Driver) Create() error {
 			time.Sleep(2 * time.Second)
 			continue
 		}
-
 		if ip != "" {
 			log.Debugf("Got an ip: %s", ip)
 			conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", ip, 22), time.Duration(2*time.Second))
@@ -388,8 +398,11 @@ func (d *Driver) Create() error {
 }
 
 func (d *Driver) Start() error {
-	vmrun("start", d.vmxPath(), "nogui")
-
+	if d.NoNoGUI {
+		vmrun("start", d.vmxPath())
+	} else {
+		vmrun("start", d.vmxPath(), "nogui")
+	}
 	// Do not execute the rest of boot2docker specific configuration, exit here
 	if d.ConfigDriveURL != "" {
 		log.Debugf("Leaving start sequence early, configdrive found")
@@ -433,7 +446,12 @@ func (d *Driver) Start() error {
 }
 
 func (d *Driver) Stop() error {
-	_, _, err := vmrun("stop", d.vmxPath(), "nogui")
+	var err error
+	if d.NoNoGUI {
+		_, _, err = vmrun("stop", d.vmxPath())
+	} else {
+		_, _, err = vmrun("stop", d.vmxPath(), "nogui")
+	}
 	return err
 }
 
@@ -445,13 +463,21 @@ func (d *Driver) Remove() error {
 		}
 	}
 	log.Infof("Deleting %s...", d.MachineName)
-	vmrun("deleteVM", d.vmxPath(), "nogui")
+	if d.NoNoGUI {
+		vmrun("deleteVM", d.vmxPath())
+	} else {
+		vmrun("deleteVM", d.vmxPath(), "nogui")
+	}
 	return nil
 }
 
 func (d *Driver) Restart() error {
-	_, _, err := vmrun("reset", d.vmxPath(), "nogui")
-	
+	var err error
+	if d.NoNoGUI {
+		_, _, err = vmrun("reset", d.vmxPath())
+	} else {
+		_, _, err = vmrun("reset", d.vmxPath(), "nogui")
+	}
 	log.Debugf("Mounting Shared Folders...")
 	var shareName, shareDir, guestFolder, guestCompatLink string // TODO configurable at some point
 	switch runtime.GOOS {
@@ -489,7 +515,12 @@ func (d *Driver) Restart() error {
 }
 
 func (d *Driver) Kill() error {
-	_, _, err := vmrun("stop", d.vmxPath(), "hard nogui")
+	var err error
+	if d.NoNoGUI {
+		_, _, err = vmrun("stop", d.vmxPath(), "hard")
+	} else {
+		_, _, err = vmrun("stop", d.vmxPath(), "hard nogui")
+	}
 	return err
 }
 

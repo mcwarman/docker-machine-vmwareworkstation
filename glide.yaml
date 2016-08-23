@@ -1,4 +1,4 @@
-package: github.com/pecigonzalo/docker-machine-vmwareworkstation
+package: github.com/mcwarman/docker-machine-vmwareworkstation
 import:
 - package: github.com/docker/machine
   version: v0.7.0

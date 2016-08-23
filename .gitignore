@@ -27,3 +27,6 @@ _testmain.go
 *.prof
 
 bin/
+
+.idea
+*.iml

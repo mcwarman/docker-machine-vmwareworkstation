@@ -148,6 +148,7 @@ Available options:
  - `--vmwareworkstation-ssh-user`: SSH user
  - `--vmwareworkstation-ssh-password`: SSH password
  - `--vmwareworkstation-no-nogui`: Enables VMWare GUI
+ - `--vmwareworkstation-vpn`: Overrides IP address to 127.0.0.1 (assumes port forwarding is set up).
 
 The `--vmwareworkstation-boot2docker-url` flag takes a few different forms. By
 default, if no value is specified for this flag, Machine will check locally for
@@ -172,6 +173,7 @@ Environment variables and default values:
 | `--vmwareworkstation-ssh-user`        | `WORKSTATION_SSH_USER`        | `docker`                 |
 | `--vmwareworkstation-ssh-password`    | `WORKSTATION_SSH_PASSWORD`    | `tcuser`                 |
 | `--vmwareworkstation-no-nogui`        | `WORKTSATION_NO_NOGUI`        | `false`                  |
+| `--vmwareworkstation-vpn`             | `WORKTSATION_VPN`             | `false`                  |
 
 ## Development
 

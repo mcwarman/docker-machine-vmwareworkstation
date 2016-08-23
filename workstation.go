@@ -50,6 +50,7 @@ type Driver struct {
 	SSHPassword    string
 	ConfigDriveISO string
 	ConfigDriveURL string
+	VPN            bool
 	NoNoGUI        bool
 }
 
@@ -112,6 +113,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Name:   "vmwareworkstation-no-nogui",
 			Usage:  "Enables VMWare GUI",
 		},
+		mcnflag.BoolFlag{
+			EnvVar: "WORKTSATION_VPN",
+			Name:   "vmwareworkstation-vpn",
+			Usage:  "Overrides IP address to 127.0.0.1 (assumes port forwarding is set up).",
+		},
 	}
 }
 
@@ -121,6 +127,7 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 		Memory:      defaultMemory,
 		DiskSize:    defaultDiskSize,
 		SSHPassword: defaultSSHPass,
+		VPN:         false,
 		NoNoGUI:     false,
 		BaseDriver: &drivers.BaseDriver{
 			SSHUser:     defaultSSHUser,
@@ -159,6 +166,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.SSHUser = flags.String("vmwareworkstation-ssh-user")
 	d.SSHPassword = flags.String("vmwareworkstation-ssh-password")
 	d.SSHPort = 22
+	d.VPN = flags.Bool("vmwareworkstation-vpn")
 	d.NoNoGUI = flags.Bool("vmwareworkstation-no-nogui")
 
 	// We support a maximum of 16 cpu to be consistent with Virtual Hardware 10
@@ -197,7 +205,11 @@ func (d *Driver) GetIP() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	log.Debugf("Got an ip: %s", ip)
+	if d.VPN {
+		ip = "127.0.0.1"
+		log.Debugf("VPN enaled, ip overwritten with: %s", ip)
+	}
 	return ip, nil
 }
 
@@ -290,6 +302,10 @@ func (d *Driver) Create() error {
 		}
 		if ip != "" {
 			log.Debugf("Got an ip: %s", ip)
+			if d.VPN{
+				ip = "127.0.0.1"
+				log.Debugf("VPN enabled, ip overwritten with: %s", ip)
+			}
 			conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", ip, 22), time.Duration(2*time.Second))
 			if err != nil {
 				log.Debugf("SSH Daemon not responding yet: %s", err)
